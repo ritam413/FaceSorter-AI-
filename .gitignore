@@ -244,6 +244,10 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+known_people/
+sorted_faces/
+Puchku/
+Ritam/
 
 # Spyder project settings
 .spyderproject
