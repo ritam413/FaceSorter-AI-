@@ -2,13 +2,18 @@ import face_recognition
 import os
 import shutil
 from collections import defaultdict
-
+import cv2
+from tqdm import tqdm
 
 
 # === CONFIG ===
 KNOWN_DIR = "known_people"
 UNSORTED_DIR = r"F:\My phthos\2025"
 OUTPUT_DIR = r"F:\My phthos\sorted images"
+
+def resize_image(image,scale=0.25):
+    return cv2.resize(image,(0,0), fx=scale , fy= scale)
+
 
 def load_known_faces():
     name_to_encodings = defaultdict(list)
@@ -22,7 +27,8 @@ def load_known_faces():
             image_path = os.path.join(person_path, image_file)
             try:
                 image = face_recognition.load_image_file(image_path)
-                encodings = face_recognition.face_encodings(image)
+                small_image = resize_image(image, scale=0.25 )
+                encodings = face_recognition.face_encodings(small_image)
                 if encodings:
                     name_to_encodings[person_name].append(encodings[0])
                     print(f"✅ Loaded encoding for {person_name} from {image_file}")
@@ -42,15 +48,27 @@ def load_known_faces():
 def sort_images(known_encodings, known_names):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    for image_name in os.listdir(UNSORTED_DIR):
+    for image_name in tqdm(os.listdir(UNSORTED_DIR),desc="📂 Sorting images"):
         image_path = os.path.join(UNSORTED_DIR, image_name)
+
+        already_sorted = False
+        for folder_name in os.listdir(OUTPUT_DIR):
+            folder_path=os.path.join(OUTPUT_DIR,folder_name)
+            if os.path.isdir(folder_name) and image_name in os.listdir(folder_path):
+                already_sorted = True
+                break
+        if already_sorted:
+            print(f"⏩ Skipping already sorted image: {image_name}")
+            continue
+
         try:
             image = face_recognition.load_image_file(image_path)
+            small_image = resize_image(image,scale=0.25)
         except Exception as e:
             print(f"❌ Cannot load {image_path}: {e}")
             continue
 
-        face_encodings = face_recognition.face_encodings(image)
+        face_encodings = face_recognition.face_encodings(small_image)
 
         matches_found = set()
 
